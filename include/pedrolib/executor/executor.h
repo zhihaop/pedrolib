@@ -47,6 +47,29 @@ void for_each(Executor* executor, Iterator begin, Iterator end, Task&& task) {
   latch.Await();
 }
 
+template <typename Task>
+void for_each(Executor* executor, size_t begin, size_t end, Task&& task) {
+  size_t n = end - begin;
+  size_t p = executor->Size();
+  size_t m = n / p;
+  size_t t = n % p;
+
+  Latch latch(p);
+  size_t last = begin;
+  for (size_t i = 0; i < p; ++i) {
+    size_t first = last;
+    size_t next = first + m + (i < t);
+    last = next;
+    executor->Schedule([&, first, next, task] {
+      for (size_t j = first; j != next; ++j) {
+        task(j);
+      }
+      latch.CountDown();
+    });
+  }
+  latch.Await();
+}
+
 }  // namespace pedrolib
 
 #endif  // PEDROLIB_EXECUTOR_EXECUTOR_H
