@@ -63,7 +63,11 @@ class SimpleConcurrentHashMap {
   Hash hash_;
 
  public:
-  explicit SimpleConcurrentHashMap(size_t segments) : tables_(segments) {}
+  explicit SimpleConcurrentHashMap(size_t segments) : tables_(segments) {
+    for (size_t i = 0; i < segments; ++i) {
+      tables_.emplace_back();
+    }
+  }
 
   SimpleConcurrentHashMap()
       : SimpleConcurrentHashMap(std::thread::hardware_concurrency()) {}
