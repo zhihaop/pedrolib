@@ -47,6 +47,16 @@ class SimpleConcurrentHashMap {
       }
       return false;
     }
+
+    bool erase(const K& key, V& value) {
+      std::lock_guard guard{mu_};
+      auto it = table_.find(key);
+      if (it == table_.end()) {
+        return false;
+      }
+      value = std::move(it->second);
+      return true;
+    }
   };
 
   StaticVector<HashMap> tables_;
@@ -74,11 +84,16 @@ class SimpleConcurrentHashMap {
     size_t b = segments(key);
     return tables_[b].at(key, value);
   }
-  
+
   template <class Value>
   bool insert(const K& key, Value&& value) {
     size_t b = segments(key);
     return tables_[b].insert(key, std::forward<Value>(value));
+  }
+
+  bool erase(const K& key, V& value) {
+    size_t b = segments(key);
+    return tables_[b].erase(key, value);
   }
 };
 }  // namespace pedrolib
