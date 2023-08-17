@@ -29,33 +29,16 @@ void ArrayBuffer::EnsureWritable(size_t n, bool fixed) {
 ssize_t ArrayBuffer::Append(File* source) {
   const size_t kMaxReadBytes = 65536;
   
-  if (WritableBytes() >= kMaxReadBytes) {
-    ssize_t r = source->Read(WriteIndex(), kMaxReadBytes);
-    if (r > 0) {
-      Append(r);
-    }
-    return r;
-  }
-
   size_t writable = WritableBytes();
-  char* buf = reinterpret_cast<char*>(alloca(kMaxReadBytes - writable));
-  std::string_view io_vector[2] = {{WriteIndex(), writable},
-                                   {buf, kMaxReadBytes - writable}};
-
-  ssize_t r = source->Readv(io_vector, 2);
-  if (r <= 0) {
-    return r;
-  }
-
-  if (r <= writable) {
+  ssize_t r = source->Read(WriteIndex(), writable);
+  if (r > 0) {
     Append(r);
-    return r;
+
+    if (WritableBytes() == 0 && buf_.size() < kMaxReadBytes) {
+      buf_.resize(std::min(buf_.size() << 1, kMaxReadBytes));
+    }
   }
 
-  Append(writable);
-
-  EnsureWritable(r - writable, true);
-  Append(buf, r - writable);
   return r;
 }
 
