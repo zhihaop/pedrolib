@@ -37,9 +37,9 @@ class File : pedrolib::noncopyable {
 
   static Error Remove(const char* name);
 
-  static int64_t Fill(File& file, char ch, uint64_t n);
-
-  static int64_t Size(File& file);
+  int64_t GetSize();
+  
+  Error Reserve(int64_t n);
 
   explicit File(int fd) : fd_(fd) {}
 
@@ -65,19 +65,19 @@ class File : pedrolib::noncopyable {
 
   virtual ssize_t Pwritev(uint64_t offset, std::string_view* buf, size_t n);
 
-  bool Valid() const noexcept { return fd_ != kInvalid; }
+  [[nodiscard]] bool Valid() const noexcept { return fd_ != kInvalid; }
 
-  int Descriptor() const noexcept { return fd_; }
+  [[nodiscard]] int Descriptor() const noexcept { return fd_; }
 
   void Close();
 
   virtual ~File() { Close(); }
 
-  virtual Error GetError() const noexcept { return Error(errno); }
+  [[nodiscard]] virtual Error GetError() const noexcept { return Error(errno); }
 
-  virtual std::string String() const;
+  [[nodiscard]] virtual std::string String() const;
 
-  Error Sync() const noexcept;
+  [[nodiscard]] Error Sync() const noexcept;
 };
 
 }  // namespace pedrolib

@@ -7,8 +7,6 @@
 
 namespace pedrolib {
 
-Logger File::logger = Logger("pedrolib::File");
-
 struct DefaultDeleter {
   void operator()(struct iovec* ptr) const noexcept { std::free(ptr); }
 };
@@ -35,7 +33,6 @@ void File::Close() {
   if (fd_ <= 0) {
     return;
   }
-  logger.Trace("{}::Close()", *this);
   ::close(fd_);
   fd_ = kInvalid;
 }
@@ -96,6 +93,7 @@ int64_t File::Seek(uint64_t offset, File::Whence whence) {
   auto off = ::lseek64(fd_, static_cast<__off64_t>(offset), hint);
   return static_cast<int64_t>(off);
 }
+
 ssize_t File::Pwrite(uint64_t offset, const void* buf, size_t n) {
   return ::pwrite64(fd_, buf, n, static_cast<__off64_t>(offset));
 }
@@ -138,33 +136,16 @@ File File::Open(const char* name, File::OpenOption option) {
   return File{fd};
 }
 
-int64_t File::Fill(File& file, char ch, uint64_t n) {
-  if (!file.Valid()) {
-    return -1;
-  }
-  std::vector<char> buf(128 << 10, ch);
-  uint64_t total = 0;
-  uint64_t buf_size = buf.size();
-  while (total < n) {
-    ssize_t w = file.Pwrite(total, buf.data(), std::min(n - total, buf_size));
-    if (w <= 0) {
-      return -1;
-    }
-    total += w;
-  }
-  return static_cast<int64_t>(total);
-}
-
-int64_t File::Size(File& file) {
-  int64_t cur = file.Seek(0, Whence::kSeekCur);
+int64_t File::GetSize() {
+  int64_t cur = Seek(0, Whence::kSeekCur);
   if (cur < 0) {
     return cur;
   }
-  int64_t n = file.Seek(0, Whence::kSeekEnd);
+  int64_t n = Seek(0, Whence::kSeekEnd);
   if (n < 0) {
     return n;
   }
-  if (file.Seek(cur, Whence::kSeekSet) < 0) {
+  if (Seek(cur, Whence::kSeekSet) < 0) {
     return -1;
   }
   return n;
@@ -213,6 +194,19 @@ ssize_t File::Pwritev(uint64_t offset, std::string_view* buf, size_t n) {
 
   return ::pwritev64(fd_, io, static_cast<int>(n),
                      static_cast<__off64_t>(offset));
+}
+
+Error File::Reserve(int64_t n) {
+  if (n == 0) {
+    return Error::kOk;
+  }
+
+  if (Seek(n - 1, File::Whence::kSeekSet) < 0) {
+    return GetError();
+  }
+
+  char buf{};
+  return Write(&buf, 1) < 0 ? GetError() : Error::kOk;
 }
 
 }  // namespace pedrolib
