@@ -1,5 +1,6 @@
 #include "pedrolib/file/file.h"
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/uio.h>
 #include <unistd.h>
 #include <vector>
@@ -196,7 +197,7 @@ ssize_t File::Pwritev(uint64_t offset, std::string_view* buf, size_t n) {
                      static_cast<__off64_t>(offset));
 }
 
-Error File::Reserve(int64_t n) {
+Error File::Reserve(uint64_t n) {
   if (n == 0) {
     return Error::kOk;
   }

@@ -42,8 +42,19 @@ class Latch {
   }
 
   void CountDown() {
-    size_t cnt = count_.fetch_add(-1, std::memory_order_acq_rel);
-    if (cnt - 1 == 0) {
+    size_t x;
+    for (;;) {
+      size_t n = count_.load(std::memory_order::memory_order_acquire);
+      if (n == 0) {
+        x = n;
+        break;
+      }
+      x = n - 1;
+      if (count_.compare_exchange_strong(n, x, std::memory_order_release)) {
+        break;
+      }
+    }
+    if (x == 0) {
       std::unique_lock<std::mutex> lock(mu_);
       zero_.notify_all();
     }

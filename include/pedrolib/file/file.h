@@ -28,8 +28,6 @@ class File : pedrolib::noncopyable {
  protected:
   int fd_{kInvalid};
 
-  static Logger logger;
-
  public:
   File() = default;
 
@@ -38,8 +36,8 @@ class File : pedrolib::noncopyable {
   static Error Remove(const char* name);
 
   int64_t GetSize();
-  
-  Error Reserve(int64_t n);
+
+  Error Reserve(uint64_t n);
 
   explicit File(int fd) : fd_(fd) {}
 
