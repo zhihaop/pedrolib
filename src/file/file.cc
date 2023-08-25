@@ -207,7 +207,14 @@ Error File::Reserve(uint64_t n) {
   }
 
   char buf{};
-  return Write(&buf, 1) < 0 ? GetError() : Error::kOk;
+  if (Write(&buf, 1) < 0) {
+    return GetError();
+  }
+  
+  if (Seek(0, File::Whence::kSeekSet) < 0) {
+    return GetError();
+  }
+  return Error::kOk;
 }
 
 }  // namespace pedrolib
